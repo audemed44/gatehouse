@@ -367,8 +367,14 @@ func TestScaleToZero(t *testing.T) {
 		t.Fatalf("restart forgot: %+v", st)
 	}
 
+	// A monitor's probe neither wakes it nor gets the waking page.
+	w := do(p, "GET", "http://app.example.com/", func(r *http.Request) { r.Header.Set(ProbeHeader, "1") })
+	if w.Code != 503 || w.Header().Get(StateHeader) != "sleeping" || fd.starts != 0 {
+		t.Fatalf("probe while asleep: %d %v starts=%d", w.Code, w.Header(), fd.starts)
+	}
+
 	// A browser gets the waking page; the container is started.
-	w := do(p, "GET", "http://app.example.com/", func(r *http.Request) { r.Header.Set("Accept", "text/html") })
+	w = do(p, "GET", "http://app.example.com/", func(r *http.Request) { r.Header.Set("Accept", "text/html") })
 	if w.Code != 503 || !strings.Contains(w.Body.String(), "Waking up") || !strings.Contains(w.Body.String(), `http-equiv="refresh"`) {
 		t.Fatalf("waking page: %d %s", w.Code, w.Body)
 	}
@@ -382,6 +388,15 @@ func TestScaleToZero(t *testing.T) {
 	}
 	if st, _ := sl.Status("app"); st.State != sleep.Awake {
 		t.Fatalf("state: %+v", st)
+	}
+	// While awake, a probe goes through but doesn't count as activity.
+	before, _ := sl.Status("app")
+	time.Sleep(5 * time.Millisecond)
+	if w := do(p, "GET", "http://app.example.com/", func(r *http.Request) { r.Header.Set(ProbeHeader, "1") }); w.Code != 200 {
+		t.Fatalf("probe while awake: %d", w.Code)
+	}
+	if after, _ := sl.Status("app"); !after.LastActive.Equal(before.LastActive) {
+		t.Fatal("a probe counted as activity")
 	}
 	srv.Close()
 
