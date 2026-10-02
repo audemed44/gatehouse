@@ -51,7 +51,7 @@ function SettingsForm(props: { settings: SettingsView; onSaved: (s: SettingsView
       <section class="section">
         <SectionHead index={1} title="Certificates" />
         <div class="form-grid">
-          <Field label="ACME email" hint="Let's Encrypt's account; it may email about problems.">
+          <Field label="ACME email" hint="Optional contact for the Let's Encrypt account.">
             <input
               class="input"
               type="email"

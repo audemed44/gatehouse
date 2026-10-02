@@ -30,7 +30,7 @@ func TestPebble(t *testing.T) {
 		Options: []dns01.ChallengeOption{dns01.DisableAuthoritativeNssPropagationRequirement()},
 	}
 	s := config.Default().Settings
-	s.ACMEEmail = "test@example.com"
+	s.ACMEEmail = "" // optional; also checks an account without a contact
 	s.Resolvers = []string{"127.0.0.1:8053"}
 	store, _ := Open(t.TempDir())
 	m := NewManager(store, l, func() config.Settings { return s })

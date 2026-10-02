@@ -78,7 +78,9 @@ type Redirect struct {
 }
 
 type Settings struct {
-	// ACME account and DNS-01 provider for issuing certificates.
+	// ACME account and DNS-01 provider for issuing certificates. The email
+	// is optional: Let's Encrypt no longer sends expiry mail, and Gatehouse
+	// does its own warnings.
 	ACMEEmail   string `json:"acme_email" yaml:"acme_email"`
 	ACMEStaging bool   `json:"acme_staging" yaml:"acme_staging"`
 	DNSProvider string `json:"dns_provider" yaml:"dns_provider"`

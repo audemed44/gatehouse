@@ -103,15 +103,6 @@ function Warnings(props: { settings: SettingsView | null }) {
           Gatehouse a Cloudflare API token with Zone · DNS · Edit in its environment.
         </div>
       )}
-      {!s.acme_email && (
-        <div class="note note-warn">
-          Set the ACME email in{" "}
-          <a class="link-btn" href="/settings">
-            Settings
-          </a>{" "}
-          before requesting certificates.
-        </div>
-      )}
       {s.acme_staging && (
         <div class="note note-accent">
           Using Let's Encrypt's staging CA: new certificates won't be trusted by browsers.

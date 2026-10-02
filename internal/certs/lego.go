@@ -9,7 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,9 +71,6 @@ func dnsProvider(name string) (challenge.Provider, error) {
 }
 
 func (l *Lego) Obtain(ctx context.Context, domains []string, s config.Settings) ([]byte, []byte, error) {
-	if s.ACMEEmail == "" {
-		return nil, nil, errors.New("set the ACME email in Settings first")
-	}
 	caDir := l.CADir
 	env := "staging"
 	if caDir == "" {
