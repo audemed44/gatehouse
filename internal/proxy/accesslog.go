@@ -19,6 +19,9 @@ type Entry struct {
 	Client  string    `json:"client"`
 	TLS     bool      `json:"tls"`
 	Matched bool      `json:"matched"` // false: no host was set up for the name
+	// Asleep marks a monitor's probe answered "asleep" (a 503 by design):
+	// not an error.
+	Asleep bool `json:"asleep,omitempty"`
 }
 
 // HostStats counts requests per host since Gatehouse started.
@@ -29,6 +32,7 @@ type HostStats struct {
 	Status3  int64     `json:"status_3xx"`
 	Status4  int64     `json:"status_4xx"`
 	Status5  int64     `json:"status_5xx"`
+	Asleep   int64     `json:"asleep"` // probes answered while the app slept
 	Bytes    int64     `json:"bytes"`
 	LastSeen time.Time `json:"last_seen"`
 }
@@ -91,6 +95,8 @@ func (l *AccessLog) Add(e Entry) {
 	s.Bytes += e.Bytes
 	s.LastSeen = e.Time
 	switch {
+	case e.Asleep:
+		s.Asleep++
 	case e.Status >= 500:
 		s.Status5++
 	case e.Status >= 400:
@@ -122,7 +128,7 @@ func (l *AccessLog) Query(host string, errorsOnly bool, limit int) []Entry {
 		if host != "" && e.Host != host {
 			continue
 		}
-		if errorsOnly && e.Status < 400 {
+		if errorsOnly && (e.Status < 400 || e.Asleep) {
 			continue
 		}
 		out = append(out, e)

@@ -243,7 +243,7 @@ function HostLine(props: { host: HostView; onEdit: () => void; onChanged: () => 
             class={st.status_5xx ? "tone-bad" : ""}
             href={`/logs?host=${encodeURIComponent(h.domains[0])}`}
             onClick={(e) => e.stopPropagation()}
-            title={`${st.status_2xx} 2xx · ${st.status_3xx} 3xx · ${st.status_4xx} 4xx · ${st.status_5xx} 5xx · last ${ago(st.last_seen)}`}
+            title={`${st.status_2xx} 2xx · ${st.status_3xx} 3xx · ${st.status_4xx} 4xx · ${st.status_5xx} 5xx${st.asleep ? ` · ${st.asleep} probes while asleep` : ""} · last ${ago(st.last_seen)}`}
           >
             {st.requests}
             {st.status_5xx ? ` · ${st.status_5xx}×5xx` : ""}

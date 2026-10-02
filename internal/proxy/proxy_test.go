@@ -372,6 +372,9 @@ func TestScaleToZero(t *testing.T) {
 	if w.Code != 503 || w.Header().Get(StateHeader) != "sleeping" || fd.starts != 0 {
 		t.Fatalf("probe while asleep: %d %v starts=%d", w.Code, w.Header(), fd.starts)
 	}
+	if e := p.Log.Query("app.example.com", false, 1); len(e) != 1 || !e[0].Asleep {
+		t.Fatalf("probe not logged as asleep: %+v", e)
+	}
 
 	// A browser gets the waking page; the container is started.
 	w = do(p, "GET", "http://app.example.com/", func(r *http.Request) { r.Header.Set("Accept", "text/html") })
@@ -418,4 +421,17 @@ func TestScaleToZero(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	t.Fatal("never woke")
+}
+
+func TestAsleepProbesAreNotErrors(t *testing.T) {
+	l := NewAccessLog(10)
+	l.Add(Entry{Host: "a.example.com", Status: 503, Matched: true, Asleep: true})
+	l.Add(Entry{Host: "a.example.com", Status: 502, Matched: true})
+	st := l.Stats()[0]
+	if st.Status5 != 1 || st.Asleep != 1 || st.Requests != 2 {
+		t.Fatalf("stats: %+v", st)
+	}
+	if e := l.Query("", true, 10); len(e) != 1 || e[0].Status != 502 {
+		t.Fatalf("errors: %+v", e)
+	}
 }

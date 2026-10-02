@@ -50,6 +50,7 @@ export interface HostStats {
   status_3xx: number;
   status_4xx: number;
   status_5xx: number;
+  asleep: number; // monitor probes answered while the app slept
   bytes: number;
   last_seen: string;
 }
@@ -103,6 +104,7 @@ export interface LogEntry {
   client: string;
   tls: boolean;
   matched: boolean;
+  asleep?: boolean;
 }
 
 export interface Overview {
