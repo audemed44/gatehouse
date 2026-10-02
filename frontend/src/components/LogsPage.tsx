@@ -74,7 +74,12 @@ export function LogsPage(props: { host: string }) {
                 {data.entries.map((e, i) => (
                   <tr key={i} class={e.matched ? "" : "muted"}>
                     <td class="mono">{clock(e.time)}</td>
-                    <td class={`mono tone-${statusTone(e.status)}`}>{e.status}</td>
+                    <td
+                      class={`mono tone-${e.asleep ? "accent" : statusTone(e.status)}`}
+                      title={e.asleep ? "A monitor's probe; the app is asleep" : undefined}
+                    >
+                      {e.asleep ? "asleep" : e.status}
+                    </td>
                     {!props.host && (
                       <td>
                         <a class="link" href={`/logs?host=${encodeURIComponent(e.host)}`}>

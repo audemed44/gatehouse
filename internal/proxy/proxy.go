@@ -90,6 +90,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Time: start, Host: host, Method: r.Method, Path: logPath(r.URL),
 			Status: rec.code(), Bytes: rec.bytes, Millis: time.Since(start).Milliseconds(),
 			Client: clientIP(r).String(), TLS: r.TLS != nil, Matched: route != nil,
+			Asleep: rec.Header().Get(StateHeader) != "",
 		})
 	}
 }

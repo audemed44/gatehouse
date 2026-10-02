@@ -70,6 +70,7 @@ func (s *Server) hostViews() []hostView {
 				v.Stats.Status3 += st.Status3
 				v.Stats.Status4 += st.Status4
 				v.Stats.Status5 += st.Status5
+				v.Stats.Asleep += st.Asleep
 				v.Stats.Bytes += st.Bytes
 				if st.LastSeen.After(v.Stats.LastSeen) {
 					v.Stats.LastSeen = st.LastSeen
