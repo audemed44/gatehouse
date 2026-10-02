@@ -1,0 +1,32 @@
+# Gatehouse is the front door: every subdomain comes through it. Keep it in
+# the main stack so it shares a network with the apps it proxies to.
+services:
+  gatehouse:
+    image: ghcr.io/audemed44/gatehouse:latest
+    container_name: gatehouse
+    restart: unless-stopped
+    # The docker group's ID on the host (`getent group docker`), for
+    # scale-to-zero. Leave out with the socket if you don't use idle stop.
+    group_add: ["111"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      # openssl rand -hex 24; what you sign in to the admin UI with.
+      - GATEHOUSE_TOKEN=${GATEHOUSE_TOKEN}
+      # Optional read-only token for the discovery API (Foyer, Lookout).
+      - GATEHOUSE_DISCOVERY_TOKEN=${GATEHOUSE_DISCOVERY_TOKEN}
+      # Cloudflare API token with Zone · DNS · Edit, for DNS-01 certificates.
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - TZ=Europe/London
+    volumes:
+      - ./gatehouse:/data
+      # Start/stop for scale-to-zero. A socket proxy limited to container
+      # start, stop and inspect works too: GATEHOUSE_DOCKER_HOST=tcp://…
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Only for the one-time import from Nginx Proxy Manager.
+      - ./npm:/npm:ro
+    ports:
+      # While trying it next to NPM, use spare ports instead (e.g. 8090 and
+      # 8453), then swap to 80 and 443 when cutting over.
+      - "80:8080"
+      - "443:8443"
+      - "9140:8081" # admin UI and API; keep it off the internet
