@@ -401,6 +401,13 @@ func (m *Manager) Statuses() []Status {
 	return out
 }
 
+// State is a container's state: awake, stopping, sleeping or waking.
+func (m *Manager) State(a *App) string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.state
+}
+
 // Status of one container; ok is false if it isn't under idle stop.
 func (m *Manager) Status(container string) (Status, bool) {
 	a := m.Get(container)

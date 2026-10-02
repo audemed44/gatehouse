@@ -95,6 +95,12 @@ Other tools should treat a sleeping container as asleep, not down. The
 discovery API reports each host's `state` (`awake`, `stopping`, `sleeping`
 or `waking`) for that.
 
+Monitors should send an `X-Gatehouse-Probe: 1` header, as Lookout does. A
+request with it never wakes an app and doesn't count as activity. A sleeping
+app answers it with a 503 and `X-Gatehouse-State: sleeping`, so the monitor
+can show the app as asleep rather than down. Without the header, an
+every-minute check would keep an app from ever going to sleep.
+
 Gatehouse only needs three Docker API calls: start, stop and inspect. To
 give it no more than that, put a socket proxy in front and set
 `GATEHOUSE_DOCKER_HOST`.

@@ -170,6 +170,16 @@ func (p *Proxy) serve(w http.ResponseWriter, r *http.Request, host string, rt *r
 	}
 
 	if app := p.app(h); app != nil {
+		if isProbe(r) {
+			// A monitor's check: it mustn't wake the app or keep it awake.
+			// The header stays on, so upstreamError sees it too.
+			if st := p.Sleep.State(app); st != sleep.Awake {
+				asleep(w, st)
+				return
+			}
+			rt.proxy.ServeHTTP(w, r)
+			return
+		}
 		app.Begin()
 		defer app.End()
 		if ok, attempt := p.Sleep.Ready(app); !ok {
@@ -179,6 +189,23 @@ func (p *Proxy) serve(w http.ResponseWriter, r *http.Request, host string, rt *r
 		}
 	}
 	rt.proxy.ServeHTTP(w, r)
+}
+
+// ProbeHeader marks a monitor's request (Lookout sends it on every HTTP
+// check). For a host under idle stop it neither wakes the app nor counts
+// as activity; a sleeping app answers 503 with StateHeader.
+const (
+	ProbeHeader = "X-Gatehouse-Probe"
+	StateHeader = "X-Gatehouse-State"
+)
+
+func isProbe(r *http.Request) bool { return r.Header.Get(ProbeHeader) != "" }
+
+// asleep answers a probe for an app that's stopped on purpose.
+func asleep(w http.ResponseWriter, state string) {
+	w.Header().Set(StateHeader, state)
+	w.Header().Set("Retry-After", "60")
+	page(w, http.StatusServiceUnavailable, "Asleep", "This service is stopped until someone uses it.")
 }
 
 func (p *Proxy) app(h *config.Host) *sleep.App {
@@ -267,6 +294,10 @@ func (p *Proxy) upstreamError(w http.ResponseWriter, r *http.Request, rt *route,
 		down := p.Sleep.Down(ctx, app)
 		cancel()
 		if down {
+			if isProbe(r) {
+				asleep(w, sleep.Sleeping)
+				return
+			}
 			p.Sleep.Ready(app) // start waking it
 			if wantsHTML(r) {
 				wakingPage(w)
