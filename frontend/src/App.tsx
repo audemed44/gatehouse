@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-preact";
+import { ArrowLeft, LogOut } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 import { api, setUnauthorizedHandler } from "./api";
 import { CertificatesPage } from "./components/CertificatesPage";
@@ -25,7 +25,13 @@ export function App() {
   if (error) return <div class="boot">Can't reach Gatehouse: {error}</div>;
   if (!session) return <div class="boot" />;
   if (!session.authenticated) return <Login onDone={setSession} />;
-  return <Shell route={route} onSignOut={() => setSession({ authenticated: false })} />;
+  return (
+    <Shell
+      foyerURL={session.foyer_url}
+      route={route}
+      onSignOut={() => setSession({ authenticated: false })}
+    />
+  );
 }
 
 const NAV: { page: Route["page"]; href: string; label: string }[] = [
@@ -35,7 +41,7 @@ const NAV: { page: Route["page"]; href: string; label: string }[] = [
   { page: "settings", href: "/settings", label: "Settings" },
 ];
 
-function Shell(props: { route: Route; onSignOut: () => void }) {
+function Shell(props: { route: Route; foyerURL?: string; onSignOut: () => void }) {
   const { route } = props;
   const signOut = async () => {
     await api.logout().catch(() => {});
@@ -44,6 +50,12 @@ function Shell(props: { route: Route; onSignOut: () => void }) {
   return (
     <div class="shell" onClick={onLinkClick}>
       <header class="topbar">
+        {props.foyerURL && (
+          <a class="home-link" href={props.foyerURL} title="Back to Foyer">
+            <ArrowLeft size={14} />
+            <span class="home-link-text">Foyer</span>
+          </a>
+        )}
         <a class="brand" href="/">
           <span class="brand-mark" aria-hidden="true" />
           <span class="brand-name">Gatehouse</span>

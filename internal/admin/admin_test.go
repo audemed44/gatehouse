@@ -47,7 +47,7 @@ func setup(t *testing.T) *env {
 	m := certs.NewManager(store, is, func() config.Settings { return p.Config().Settings })
 	s := New(Options{
 		ConfigPath: filepath.Join(dir, "gatehouse.json"), Proxy: p, Certs: store, Manager: m, Sleep: sl,
-		Token: "admin-token", DiscoveryToken: "read-only", Web: fstest.MapFS{"index.html": {Data: []byte("<!doctype html>app")}},
+		Token: "admin-token", DiscoveryToken: "read-only", FoyerURL: "https://home.example", Web: fstest.MapFS{"index.html": {Data: []byte("<!doctype html>app")}},
 	})
 	srv := httptest.NewServer(s.Handler())
 	t.Cleanup(srv.Close)
@@ -90,6 +90,9 @@ func TestAuth(t *testing.T) {
 	}
 	if code, _ := e.call("GET", "/api/discovery", "admin-token", nil); code != 200 {
 		t.Fatalf("admin token on discovery: %d", code)
+	}
+	if code, body := e.call("GET", "/api/session", "", nil); code != 200 || body != `{"authenticated":false,"foyer_url":"https://home.example"}`+"\n" {
+		t.Fatalf("session: %d %s", code, body)
 	}
 	// Browser sign-in sets a cookie that works.
 	resp, err := http.Post(e.srv.URL+"/api/session", "application/json", strings.NewReader(`{"token":"admin-token"}`))

@@ -91,7 +91,7 @@ func main() {
 	}
 	app := admin.New(admin.Options{
 		ConfigPath: cfgPath, Proxy: p, Certs: store, Manager: manager, Sleep: sleeper,
-		Token: token, DiscoveryToken: os.Getenv("GATEHOUSE_DISCOVERY_TOKEN"), NPMDir: npmDir, Web: dist,
+		Token: token, FoyerURL: foyerURL(), DiscoveryToken: os.Getenv("GATEHOUSE_DISCOVERY_TOKEN"), NPMDir: npmDir, Web: dist,
 	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -218,4 +218,15 @@ func healthcheck() int {
 		return 1
 	}
 	return 0
+}
+
+// foyerURL is HOMEPAGE_URL, the link back to Foyer in the header, when
+// it's an http(s) address.
+func foyerURL() string {
+	u := os.Getenv("HOMEPAGE_URL")
+	if u != "" && !strings.HasPrefix(u, "https://") && !strings.HasPrefix(u, "http://") {
+		slog.Warn("HOMEPAGE_URL isn't an http(s) address; ignoring it", "url", u)
+		return ""
+	}
+	return u
 }

@@ -29,6 +29,7 @@ type Options struct {
 	DiscoveryToken string // optional read-only token for /api/discovery
 	NPMDir         string // where NPM's folder is mounted, for the import
 	Web            fs.FS
+	FoyerURL       string // Foyer, the homelab's start page, linked from the header
 }
 
 type Server struct {

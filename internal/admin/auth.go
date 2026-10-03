@@ -92,10 +92,12 @@ func sameOrigin(next http.Handler) http.Handler {
 
 type sessionInfo struct {
 	Authenticated bool `json:"authenticated"`
+	// FoyerURL is the homelab's start page, linked from the header.
+	FoyerURL string `json:"foyer_url,omitempty"`
 }
 
 func (s *Server) getSession(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, sessionInfo{Authenticated: s.authenticated(r)})
+	writeJSON(w, http.StatusOK, sessionInfo{Authenticated: s.authenticated(r), FoyerURL: s.FoyerURL})
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +117,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		MaxAge: 365 * 24 * 3600, HttpOnly: true, SameSite: http.SameSiteStrictMode,
 		Secure: r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https",
 	})
-	writeJSON(w, http.StatusOK, sessionInfo{Authenticated: true})
+	writeJSON(w, http.StatusOK, sessionInfo{Authenticated: true, FoyerURL: s.FoyerURL})
 }
 
 func (s *Server) logout(w http.ResponseWriter, _ *http.Request) {
