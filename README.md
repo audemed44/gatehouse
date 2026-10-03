@@ -42,6 +42,7 @@ unprivileged user; map 80 and 443 to the first two.
 |---|---|
 | `GATEHOUSE_TOKEN` | Required. Signs you in to the admin UI and API. |
 | `GATEHOUSE_DISCOVERY_TOKEN` | Optional read-only token for `/api/discovery`. |
+| `HOMEPAGE_URL` | Optional. Foyer's address, for a link back to it in the header. |
 | `CF_DNS_API_TOKEN` | A Cloudflare API token with Zone · DNS · Edit, used to issue and renew certificates. |
 | `GATEHOUSE_NPM_DIR` | Where NPM's folder is mounted, for the import (default `/npm` if it exists). |
 | `GATEHOUSE_DOCKER_HOST` | The Docker API, for scale-to-zero: a socket path (default `/var/run/docker.sock`) or `tcp://socket-proxy:2375`. |
