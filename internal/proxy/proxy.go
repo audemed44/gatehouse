@@ -22,6 +22,7 @@ import (
 
 	"github.com/audemed44/gatehouse/internal/certs"
 	"github.com/audemed44/gatehouse/internal/config"
+	"github.com/audemed44/gatehouse/internal/logging"
 	"github.com/audemed44/gatehouse/internal/sleep"
 )
 
@@ -126,7 +127,7 @@ func logRequest(r *http.Request, host, trace string, rec *recorder, dur time.Dur
 		slog.String("trace", trace),
 	}
 	if rec.err != nil {
-		attrs = append(attrs, slog.String("err", rec.err.Error()))
+		attrs = append(attrs, slog.String("err", logging.ScrubURLs(rec.err.Error())))
 	}
 	msg := "proxied " + host
 	if level == slog.LevelWarn {
