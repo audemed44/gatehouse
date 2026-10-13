@@ -227,6 +227,15 @@ func TestFailureCause(t *testing.T) {
 	}
 }
 
+func TestScrubURLs(t *testing.T) {
+	in := `Get "http://sonarr:8989/api/v3/queue?apikey=abc123&x=1": dial tcp: refused; also https://bob:hunter2@host/path`
+	got := ScrubURLs(in)
+	if strings.Contains(got, "abc123") || strings.Contains(got, "hunter2") ||
+		!strings.Contains(got, "http://sonarr:8989/api/v3/queue?[redacted]") || !strings.Contains(got, "https://bob:[redacted]@host/path") {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestRouteMessage(t *testing.T) {
 	buf, _, _ := testLogger(t, slog.LevelDebug)
 	api := http.NewServeMux()

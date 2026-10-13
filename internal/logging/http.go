@@ -157,7 +157,9 @@ type recorder struct {
 // failureBody is how much of a 5xx response is kept for its log line.
 const failureBody = 1 << 10
 
-// failure is what a 5xx response said: its JSON "error", or its text.
+// failure is what a 5xx response said: its JSON "error", or its text,
+// with any URL's query and password taken out (Go's HTTP errors quote the
+// URL, and widget URLs often carry an API key).
 func (r *recorder) failure() string {
 	if len(r.body) == 0 {
 		return ""
@@ -165,10 +167,22 @@ func (r *recorder) failure() string {
 	var e struct {
 		Error string `json:"error"`
 	}
+	msg := strings.TrimSpace(string(r.body))
 	if json.Unmarshal(r.body, &e) == nil && e.Error != "" {
-		return e.Error
+		msg = e.Error
 	}
-	return strings.TrimSpace(string(r.body))
+	return ScrubURLs(msg)
+}
+
+var (
+	urlQuery    = regexp.MustCompile(`(\b[a-z][a-z0-9+.-]*://[^\s"'?]*)\?[^\s"']*`)
+	urlPassword = regexp.MustCompile(`(\b[a-z][a-z0-9+.-]*://[^\s"'/@:]*):[^\s"'/@]*@`)
+)
+
+// ScrubURLs replaces the query and the password of every URL in s.
+func ScrubURLs(s string) string {
+	s = urlQuery.ReplaceAllString(s, "$1?[redacted]")
+	return urlPassword.ReplaceAllString(s, "$1:[redacted]@")
 }
 
 func (r *recorder) WriteHeader(code int) {
