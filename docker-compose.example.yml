@@ -5,6 +5,12 @@ services:
     image: ghcr.io/audemed44/gatehouse:latest
     container_name: gatehouse
     restart: unless-stopped
+    # Cap Docker's copy of the logs: 3 files of 10 MB, oldest dropped.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     # The docker group's ID on the host (`getent group docker`), for
     # scale-to-zero. Leave out with the socket if you don't use idle stop.
     group_add: ["111"]

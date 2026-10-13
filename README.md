@@ -47,6 +47,8 @@ unprivileged user; map 80 and 443 to the first two.
 | `GATEHOUSE_NPM_DIR` | Where NPM's folder is mounted, for the import (default `/npm` if it exists). |
 | `GATEHOUSE_DOCKER_HOST` | The Docker API, for scale-to-zero: a socket path (default `/var/run/docker.sock`) or `tcp://socket-proxy:2375`. |
 | `GATEHOUSE_HTTP_PORT`, `GATEHOUSE_HTTPS_PORT`, `GATEHOUSE_ADMIN_PORT` | Default to 8080, 8443 and 8081. |
+| `LOG_LEVEL` | `info` |
+| `LOG_FORMAT` | `json` |
 
 Everything lives in `/data`:
 - `gatehouse.json` is the config (the previous version is kept as `.bak`).
@@ -136,6 +138,24 @@ admin token) as a bearer token.
 [Foyer's app widget format](https://github.com/audemed44/foyer/blob/main/docs/app-widgets.md),
 with hosts, the soonest certificate expiry, 5xx counts, and a **Wake**
 button for each sleeping app.
+
+## Logs
+
+Gatehouse writes one JSON object per line on stderr, for
+[Logbook](https://github.com/audemed44/logbook) to collect: every request
+(failures as errors, changes at info, plain reads at debug), background
+jobs with how long they took, and an audit line for sign-ins. Nothing it
+stores goes into the logs. A message repeated more than 20 times a minute
+is held back and counted, at most 600 lines a minute get out, and long
+values are cut at 4 KB, so a failing Gatehouse can't flood the disk. Docker's
+own copy is capped in compose (`logging:`, 3 × 10 MB).
+
+Proxied requests are logged one line each at debug only; at the default
+level, only failures (5xx, with the upstream's error) are, as
+`upstream failed: <host>`. Every proxied request gets an `X-Request-Id`
+(an incoming one is kept), passed on to the app, so the app's lines share
+a trace with Gatehouse's in Logbook. The admin UI's access log keeps every
+request either way.
 
 ## Development
 

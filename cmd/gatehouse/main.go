@@ -23,6 +23,7 @@ import (
 	"github.com/audemed44/gatehouse/internal/certs"
 	"github.com/audemed44/gatehouse/internal/config"
 	"github.com/audemed44/gatehouse/internal/docker"
+	"github.com/audemed44/gatehouse/internal/logging"
 	"github.com/audemed44/gatehouse/internal/proxy"
 	"github.com/audemed44/gatehouse/internal/sleep"
 	"github.com/audemed44/gatehouse/web"
@@ -44,11 +45,11 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		os.Exit(healthcheck())
 	}
-	level := slog.LevelInfo
-	if os.Getenv("GATEHOUSE_DEBUG") != "" {
-		level = slog.LevelDebug
+	// GATEHOUSE_DEBUG still works: it's LOG_LEVEL=debug.
+	if os.Getenv("GATEHOUSE_DEBUG") != "" && os.Getenv("LOG_LEVEL") == "" {
+		os.Setenv("LOG_LEVEL", "debug")
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+	logging.Setup("gatehouse", os.Stderr)
 
 	token := os.Getenv("GATEHOUSE_TOKEN")
 	if token == "" {

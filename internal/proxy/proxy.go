@@ -6,7 +6,10 @@ package proxy
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -84,7 +87,15 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host := hostOnly(r.Host)
 	rt := p.tables.Load()
 	route := rt.lookup(host)
+	// The app behind gets the same id, so its log lines share a trace
+	// with this one in Logbook.
+	trace := r.Header.Get("X-Request-Id")
+	if !validTrace(trace) {
+		trace = newTrace()
+		r.Header.Set("X-Request-Id", trace)
+	}
 	p.serve(rec, r, host, route)
+	logRequest(r, host, trace, rec, time.Since(start))
 	if route != nil || host != "" {
 		p.Log.Add(Entry{
 			Time: start, Host: host, Method: r.Method, Path: logPath(r.URL),
@@ -93,6 +104,54 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Asleep: rec.Header().Get(StateHeader) != "",
 		})
 	}
+}
+
+// logRequest writes a proxied request's log line: a warning when it failed
+// (5xx, with the upstream's error when there was one), debug otherwise, so
+// normal traffic costs nothing at the default level. The in-memory access
+// log keeps every request for the UI.
+func logRequest(r *http.Request, host, trace string, rec *recorder, dur time.Duration) {
+	status := rec.code()
+	level := slog.LevelDebug
+	if status >= 500 && status != 503 || rec.err != nil {
+		level = slog.LevelWarn
+	}
+	if !slog.Default().Enabled(r.Context(), level) {
+		return
+	}
+	attrs := []slog.Attr{
+		slog.String("kind", "request"), slog.String("host", host), slog.String("method", r.Method),
+		slog.String("path", logPath(r.URL)), slog.Int("status", status),
+		slog.Int64("dur_ms", dur.Milliseconds()), slog.String("ip", clientIP(r).String()),
+		slog.String("trace", trace),
+	}
+	if rec.err != nil {
+		attrs = append(attrs, slog.String("err", rec.err.Error()))
+	}
+	msg := "proxied " + host
+	if level == slog.LevelWarn {
+		msg = "upstream failed: " + host
+	}
+	slog.LogAttrs(r.Context(), level, msg, attrs...)
+}
+
+// validTrace accepts an incoming request id that's short and plain.
+func validTrace(s string) bool {
+	if s == "" || len(s) > 64 {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.') {
+			return false
+		}
+	}
+	return true
+}
+
+func newTrace() string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 // logPath drops the query: it can hold tokens.
@@ -285,6 +344,12 @@ func (p *Proxy) upstreamError(w http.ResponseWriter, r *http.Request, rt *route,
 		w.WriteHeader(499) // the client went away; nobody sees this
 		return
 	}
+	defer func() {
+		// For the request's log line, unless the app was just asleep.
+		if rec, ok := w.(*recorder); ok && rec.code() != http.StatusServiceUnavailable {
+			rec.err = err
+		}
+	}()
 	var maxErr *http.MaxBytesError
 	if errors.As(err, &maxErr) {
 		page(w, http.StatusRequestEntityTooLarge, "Too large", "The upload is bigger than this service accepts.")
@@ -329,6 +394,7 @@ type recorder struct {
 	status   int
 	bytes    int64
 	hijacked bool
+	err      error // why the upstream couldn't answer
 }
 
 func (r *recorder) WriteHeader(code int) {

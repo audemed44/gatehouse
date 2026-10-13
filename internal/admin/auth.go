@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/audemed44/gatehouse/internal/logging"
 )
 
 // Every /api/ call needs the admin token: as a bearer token (Foyer,
@@ -108,6 +110,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !equal(strings.TrimSpace(body.Token), s.Token) {
+		logging.Audit(r.Context(), "session.refused")
 		time.Sleep(500 * time.Millisecond) // slow down guessing
 		writeError(w, http.StatusUnauthorized, "wrong token")
 		return
@@ -117,10 +120,12 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		MaxAge: 365 * 24 * 3600, HttpOnly: true, SameSite: http.SameSiteStrictMode,
 		Secure: r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https",
 	})
+	logging.Audit(r.Context(), "session.signin")
 	writeJSON(w, http.StatusOK, sessionInfo{Authenticated: true, FoyerURL: s.FoyerURL})
 }
 
-func (s *Server) logout(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	logging.Audit(r.Context(), "session.signout")
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: "", Path: "/", MaxAge: -1, HttpOnly: true})
 	w.WriteHeader(http.StatusNoContent)
 }

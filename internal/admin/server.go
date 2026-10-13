@@ -15,6 +15,7 @@ import (
 
 	"github.com/audemed44/gatehouse/internal/certs"
 	"github.com/audemed44/gatehouse/internal/config"
+	"github.com/audemed44/gatehouse/internal/logging"
 	"github.com/audemed44/gatehouse/internal/proxy"
 	"github.com/audemed44/gatehouse/internal/sleep"
 )
@@ -87,7 +88,7 @@ func (s *Server) Handler() http.Handler {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.Handle("/", s.spa())
-	return securityHeaders(sameOrigin(mux))
+	return logging.Requests(securityHeaders(sameOrigin(mux)))
 }
 
 // invalid is a config the user got wrong, as opposed to a server failure.
