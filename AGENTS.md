@@ -54,6 +54,22 @@ built into `web/dist` and embedded) on a third.
   tracked uppercase eyebrows, 2px rules over numbered headings, square
   corners, one accent (#2563ff). Check phone width too.
 
+## Logging
+
+Use `internal/logging` (copied from homelab-app-template), through `log/slog`:
+
+- Inside a request or job, log with the `Context` variants
+  (`slog.ErrorContext(r.Context(), …)`) so the line carries its trace.
+- Wrap background work in `logging.Job` (or `QuietJob` when it runs every
+  minute or so) and call `End(err, counts…)`.
+- Call `logging.Audit(ctx, "thing.verb", ids…)` for anything a person
+  changes: sign-ins, settings, deletes. Set `logging.SetUser` where the app
+  knows who's signed in.
+- Messages are short and stable (`"mail sync failed"`, not one with an id
+  in it); details go in attributes. The limits count repeats per message.
+- Ids, counts and names only. Never tokens, passwords or the content the
+  app stores (mail bodies, amounts, document text).
+
 ## Commits
 
 Conventional Commits: `<type>(<scope>): <summary>`, e.g. `feat(proxy): ...`.
