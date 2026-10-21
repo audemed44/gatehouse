@@ -1,6 +1,6 @@
 module github.com/audemed44/gatehouse
 
-go 1.26.0
+go 1.26.10
 
 require (
 	github.com/go-acme/lego/v4 v4.35.2
